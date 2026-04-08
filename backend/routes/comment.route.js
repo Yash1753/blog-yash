@@ -1,6 +1,7 @@
 import e from "express"
 import {auth} from "../middlewares/auth.middleware.js";
 import {authorize} from "../middlewares/role.middleware.js"
+import {addComment,replyToComment,deleteComment,toggleLikeComment} from "../controller/comment.controller.js"
 const router = e.Router();
 
 //adding,replying and deleting a comment

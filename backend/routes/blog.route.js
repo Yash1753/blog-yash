@@ -1,6 +1,7 @@
 import e from "express";
 import {auth} from "../middlewares/auth.middleware.js";
 import {authorize} from "../middlewares/role.middleware.js"
+import {getAllBlogs,getSingleBlog,toggleLikeBlog,createBlog,updateBlog,deleteBlog} from "../controller/blog.controller.js"
 const router = e.Router();
 
 
