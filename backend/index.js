@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv  from "dotenv";
-import authRoutes from "./routes/auth.routes.js";
-import blogRoutes from "./routes/blog.routes.js";
-import commentRoutes from "./routes/comment.routes.js";
+import authRoutes from "./routes/auth.route.js";
+import blogRoutes from "./routes/blog.route.js";
+import commentRoutes from "./routes/comment.route.js";
+import { errorHandler } from "./middlewares/error.middleware.js";
 
 
 dotenv.config();

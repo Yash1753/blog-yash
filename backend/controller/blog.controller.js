@@ -1,4 +1,4 @@
-import { Blog } from "../models/Blog.js";
+import { Blog } from "../models/Blog.model.js";
 
 // 📝 Create Blog (Admin)
 export const createBlog = async (req, res) => {
@@ -65,6 +65,19 @@ export const getAllBlogs = async (req, res) => {
   }
 };
 
+export const getSingleBlog = async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    res.json(blog);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 // ✏️ Update blog (Admin)
 export const updateBlog = async (req, res) => {
   try {
