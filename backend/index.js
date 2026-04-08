@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import dotenv  from "dotenv";
+import dotenv from "dotenv";
 import authRoutes from "./routes/auth.route.js";
 import blogRoutes from "./routes/blog.route.js";
 import commentRoutes from "./routes/comment.route.js";
@@ -18,19 +18,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser())
 app.use(cors());
 
-app.use("/api/v1/auth" , authRoutes);
-app.use("/api/v1/blog" , blogRoutes);
-app.use("/api/v1/auth" , commentRoutes);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/blog", blogRoutes);
+app.use("/api/v1/comment", commentRoutes);
 
 
 app.use(errorHandler);
-const startServer = async()=>{
-    try{
+const startServer = async () => {
+    try {
         await connectDB();
         app.listen(process.env.PORT, () => {
             console.log(`server is running on port : ${process.env.PORT}`)
         })
-    }catch(e){
+    } catch (e) {
         console.error("Failed to start server:", e);
     }
 }

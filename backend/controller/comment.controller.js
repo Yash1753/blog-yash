@@ -1,5 +1,19 @@
 import { Comment } from "../models/Comment.model.js";
 
+// 📖 Get comments for a blog
+export const getCommentsByBlog = async (req, res) => {
+  try {
+    const comments = await Comment.find({ blogId: req.params.blogId })
+      .populate("userId", "name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(comments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // 💬 Add comment
 export const addComment = async (req, res) => {
   try {
@@ -42,7 +56,7 @@ export const replyToComment = async (req, res) => {
   }
 };
 
-// 🗑️ Delete comment (Admin + Moderator)
+// 🗑️ Delete comment (Owner + Admin + Moderator)
 export const deleteComment = async (req, res) => {
   try {
     const comment = await Comment.findById(req.params.commentId);
@@ -51,6 +65,16 @@ export const deleteComment = async (req, res) => {
       return res.status(404).json({ message: "Comment not found" });
     }
 
+    // Allow the comment owner, admins, and moderators to delete
+    const isOwner = comment.userId.toString() === req.user._id.toString();
+    const isPrivileged = ["admin", "moderator"].includes(req.user.role);
+
+    if (!isOwner && !isPrivileged) {
+      return res.status(403).json({ message: "Not authorized to delete this comment" });
+    }
+
+    // Cascade delete all replies to this comment
+    await Comment.deleteMany({ parentCommentId: comment._id });
     await comment.deleteOne();
 
     res.json({ message: "Comment deleted" });
@@ -59,7 +83,7 @@ export const deleteComment = async (req, res) => {
   }
 };
 
-// ❤️ Like / Unlike comment
+// ❤️ Like / Unlike comment (atomic)
 export const toggleLikeComment = async (req, res) => {
   try {
     const comment = await Comment.findById(req.params.commentId);
@@ -68,21 +92,20 @@ export const toggleLikeComment = async (req, res) => {
       return res.status(404).json({ message: "Comment not found" });
     }
 
-    const userId = req.user._id.toString();
-
-    const index = comment.likes.findIndex(
-      (id) => id.toString() === userId
+    const userId = req.user._id;
+    const alreadyLiked = comment.likes.some(
+      (id) => id.toString() === userId.toString()
     );
 
-    if (index === -1) {
-      comment.likes.push(userId);
-    } else {
-      comment.likes.splice(index, 1);
-    }
+    const updated = await Comment.findByIdAndUpdate(
+      req.params.commentId,
+      alreadyLiked
+        ? { $pull: { likes: userId } }
+        : { $addToSet: { likes: userId } },
+      { new: true }
+    );
 
-    await comment.save();
-
-    res.json({ likes: comment.likes.length });
+    res.json({ likes: updated.likes.length });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

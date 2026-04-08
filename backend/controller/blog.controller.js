@@ -1,4 +1,5 @@
 import { Blog } from "../models/Blog.model.js";
+import { Comment } from "../models/Comment.model.js";
 
 // 📝 Create Blog (Admin)
 export const createBlog = async (req, res) => {
@@ -99,7 +100,7 @@ export const updateBlog = async (req, res) => {
   }
 };
 
-// 🗑️ Delete blog (Admin)
+// 🗑️ Delete blog (Admin) — also deletes all associated comments
 export const deleteBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
@@ -108,15 +109,17 @@ export const deleteBlog = async (req, res) => {
       return res.status(404).json({ message: "Blog not found" });
     }
 
+    // Cascade delete all comments for this blog
+    await Comment.deleteMany({ blogId: blog._id });
     await blog.deleteOne();
 
-    res.json({ message: "Blog deleted" });
+    res.json({ message: "Blog and its comments deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// ❤️ Like / Unlike blog
+// ❤️ Like / Unlike blog (atomic)
 export const toggleLikeBlog = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
@@ -125,21 +128,20 @@ export const toggleLikeBlog = async (req, res) => {
       return res.status(404).json({ message: "Blog not found" });
     }
 
-    const userId = req.user._id.toString();
-
-    const index = blog.likes.findIndex(
-      (id) => id.toString() === userId
+    const userId = req.user._id;
+    const alreadyLiked = blog.likes.some(
+      (id) => id.toString() === userId.toString()
     );
 
-    if (index === -1) {
-      blog.likes.push(userId);
-    } else {
-      blog.likes.splice(index, 1);
-    }
+    const updated = await Blog.findByIdAndUpdate(
+      req.params.id,
+      alreadyLiked
+        ? { $pull: { likes: userId } }
+        : { $addToSet: { likes: userId } },
+      { new: true }
+    );
 
-    await blog.save();
-
-    res.json({ likes: blog.likes.length });
+    res.json({ likes: updated.likes.length });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
